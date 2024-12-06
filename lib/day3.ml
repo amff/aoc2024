@@ -7,6 +7,8 @@ type parse_state =
   | Int1 of int
   | Int2 of int * int
   | Done of int * int
+  | Dont of int 
+  | Do of int 
 
 module M = struct
   (* Type to parse the input into *)
@@ -25,12 +27,12 @@ module M = struct
     | Mul 3, '(' -> Int1 0
     | Mul 3, 'm' -> Mul 1
     | Int1 i, c ->
-        if Char.is_digit c && i < 100 then Int1 ((i * 10) + Char.to_int c)
+        if Char.is_digit c && i < 100 then Int1 ((i * 10) + Char.get_digit_exn c)
         else if Char.equal c ',' && (not @@ Int.equal 0 i) then Int2 (i, 0)
         else if Char.equal c 'm' then Mul 1
         else Init
     | Int2 (i1, i), c ->
-        if Char.is_digit c && i < 100 then Int2 (i1, (i * 10) + Char.to_int c)
+        if Char.is_digit c && i < 100 then Int2 (i1, (i * 10) + Char.get_digit_exn c)
         else if Char.equal c ')' && (not @@ Int.equal 0 i) then Done (i1, i)
         else if Char.equal c 'm' then Mul 1
         else Init
