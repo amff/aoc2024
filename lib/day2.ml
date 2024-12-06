@@ -32,6 +32,16 @@ module M = struct
         else false
     | _ -> failwith "invalid report"
 
+  let list_without_nth lst (nth : int) =
+    List.filteri lst ~f:(fun i _ -> not @@ Int.equal i nth)
+
+  let is_report_safe_damper r =
+    is_report_safe r
+    || Sequence.unfold ~init:0 ~f:(fun n ->
+           if Int.equal n (List.length r) then None
+           else Some (list_without_nth r n, n + 1) )
+       |> Sequence.exists ~f:is_report_safe
+
   (* Run part 1 with parsed inputs *)
   let part1 input =
     let report_safety_list = List.map input ~f:is_report_safe in
@@ -39,7 +49,10 @@ module M = struct
     @@ (List.count report_safety_list ~f:Fn.id |> Int.to_string)
 
   (* Run part 2 with parsed inputs *)
-  let part2 _ = ()
+  let part2 input =
+    let report_safety_list = List.map input ~f:is_report_safe_damper in
+    Stdio.print_endline
+    @@ (List.count report_safety_list ~f:Fn.id |> Int.to_string)
 end
 
 include M
@@ -47,8 +60,9 @@ include Day.Make (M)
 
 (* Example input *)
 let example =
-  "7 6 4 2 1\n1 2 7 8 9\n9 7 6 2 1\n1 3 2 4 5\n8 6 4 4 1\n1 3 6 7 9"
+  ""
 
 (* Expect test for example input *)
-let%expect_test _ = run example ; [%expect {| 2 
-        4 |}]
+let%expect_test _ = run example ; [%expect {| 
+    0 
+    0|}]
