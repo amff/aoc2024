@@ -34,16 +34,41 @@ module M = struct
     List.fold directions ~init:0 ~f:(fun acc dir ->
         if check_aux dir 0 x y then acc + 1 else acc )
 
-  (* Run part 1 with parsed inputs *)
-  let part1 matrix =
+  let check_xmas_cross_at matrix x y =
+    if
+      Int.equal x 0 || Int.equal y 0
+      || Int.equal y (Array.length matrix - 1)
+      || Int.equal x (Array.length (Array.get matrix y) - 1)
+      || (not @@ Char.equal 'A' (char_at matrix x y))
+    then 0
+    else
+      (* Check cross figure*)
+      let dir1_ok =
+        match
+          (char_at matrix (x - 1) (y - 1), char_at matrix (x + 1) (y + 1))
+        with
+        | 'M', 'S' | 'S', 'M' -> true
+        | _ -> false
+      and dir2_ok =
+        match
+          (char_at matrix (x - 1) (y + 1), char_at matrix (x + 1) (y - 1))
+        with
+        | 'M', 'S' | 'S', 'M' -> true
+        | _ -> false
+      in
+      if dir1_ok && dir2_ok then 1 else 0
+
+  let run matrix f =
     Array.foldi matrix ~init:0 ~f:(fun y acc l ->
         acc
-        + Array.foldi l ~init:0 ~f:(fun x x_acc _ ->
-              x_acc + count_xmas_from matrix x y ) )
+        + Array.foldi l ~init:0 ~f:(fun x x_acc _ -> x_acc + f matrix x y) )
     |> print_endline_int
 
+  (* Run part 1 with parsed inputs *)
+  let part1 matrix = run matrix count_xmas_from
+
   (* Run part 2 with parsed inputs *)
-  let part2 _ = ()
+  let part2 matrix = run matrix check_xmas_cross_at
 end
 
 include M
@@ -63,4 +88,7 @@ let example =
    MXMXAXMASX"
 
 (* Expect test for example input *)
-let%expect_test _ = run example ; [%expect {| 18 |}]
+let%expect_test _ = run example ; [%expect {| 
+18 
+9
+        |}]
