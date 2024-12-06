@@ -32,22 +32,33 @@ module M = struct
       @@ List.exists rules ~f:(fun (ar, br) ->
              Int.equal a br && Int.equal b ar )
     in
-    let rec go before cur after =
+    let rec go before cur middle after =
       match after with
-      | [] -> true
+      | [] -> (true, middle)
       | _ ->
           let valid =
             List.fold after ~init:true ~f:(fun v n ->
                 v && check_pair_valid cur n )
           in
-          if not valid then false
-          else go (cur :: before) (List.hd_exn after) (List.tl_exn after)
+          if not valid then (false, None)
+          else
+            go (cur :: before) (List.hd_exn after)
+              ( if
+                  Option.is_none middle
+                  && Int.equal (List.length before) (List.length after)
+                then Some cur
+                else middle )
+              (List.tl_exn after)
     in
-    go [] (List.hd_exn update) (List.tl_exn update)
+    go [] (List.hd_exn update) None (List.tl_exn update)
 
   (* Run part 1 with parsed inputs *)
   let part1 (rules, updates) =
-    Stdlib.print_int @@ List.count updates ~f:(check_update rules) ;
+    Stdlib.print_int
+    @@ List.fold updates ~init:0 ~f:(fun acc u ->
+           match check_update rules u with
+           | true, Some middle -> acc + middle
+           | _, _ -> acc ) ;
     Stdlib.print_char ' '
 
   (* Run part 2 with parsed inputs *)
