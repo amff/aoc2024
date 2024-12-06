@@ -1,14 +1,54 @@
 open! Imports
+open Base
 
 module M = struct
+  type rule = int * int
+
   (* Type to parse the input into *)
-  type t = unit
+  type t = rule list * int list list
+
+  let parse_rules r_lines =
+    List.map r_lines ~f:(fun r_line ->
+        match String.split r_line ~on:'|' with
+        | [fst; snd] -> (Int.of_string fst, Int.of_string snd)
+        | _ -> failwith "invalid rule parse" )
+
+  let parse_updates u_lines =
+    List.map u_lines ~f:(fun u_line ->
+        String.split u_line ~on:',' |> List.map ~f:Int.of_string )
 
   (* Parse the input to type t, invoked for both parts *)
-  let parse _inputs = ()
+  let parse _inputs =
+    let lines = String.split_lines _inputs in
+    let r_lines, u_lines =
+      List.split_while lines ~f:(fun s -> not @@ String.is_empty s)
+    in
+    let u_lines = List.drop u_lines 1 in
+    (parse_rules r_lines, parse_updates u_lines)
+
+  let check_update rules update =
+    let check_pair_valid a b =
+      not
+      @@ List.exists rules ~f:(fun (ar, br) ->
+             Int.equal a br && Int.equal b ar )
+    in
+    let rec go before cur after =
+      match after with
+      | [] -> true
+      | _ ->
+          let valid =
+            List.fold after ~init:true ~f:(fun v n ->
+                v && check_pair_valid cur n )
+          in
+          if not valid then false
+          else go (cur :: before) (List.hd_exn after) (List.tl_exn after)
+    in
+    go [] (List.hd_exn update) (List.tl_exn update)
 
   (* Run part 1 with parsed inputs *)
-  let part1 _ = ()
+  let part1 (rules, updates) =
+    Stdlib.print_int @@ List.count updates ~f:(check_update rules) ;
+    Stdlib.print_char ' '
 
   (* Run part 2 with parsed inputs *)
   let part2 _ = ()
@@ -18,7 +58,34 @@ include M
 include Day.Make (M)
 
 (* Example input *)
-let example = ""
+let example =
+  "47|53\n\
+   97|13\n\
+   97|61\n\
+   97|47\n\
+   75|29\n\
+   61|13\n\
+   75|53\n\
+   29|13\n\
+   97|29\n\
+   53|29\n\
+   61|53\n\
+   97|53\n\
+   61|29\n\
+   47|13\n\
+   75|47\n\
+   97|75\n\
+   47|61\n\
+   75|61\n\
+   47|29\n\
+   75|13\n\
+   53|13\n\n\
+   75,47,61,53,29\n\
+   97,61,53,29,13\n\
+   75,29,13\n\
+   75,97,47,61,53\n\
+   61,13,29\n\
+   97,13,75,29,47"
 
 (* Expect test for example input *)
-let%expect_test _ = run example ; [%expect {| |}]
+let%expect_test _ = run example ; [%expect {| 143 |}]
