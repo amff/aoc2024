@@ -62,7 +62,30 @@ module M = struct
     Stdlib.print_char ' '
 
   (* Run part 2 with parsed inputs *)
-  let part2 _ = ()
+  let part2 (rules, updates) =
+    let compare_updates a b =
+      if List.exists rules ~f:(fun (c, d) -> Int.equal a c && Int.equal b d)
+      then -1
+      else if
+        List.exists rules ~f:(fun (c, d) -> Int.equal a d && Int.equal b c)
+      then 1
+      else 0
+    and middle_element lst =
+      let rec go before cur after =
+        match after with
+        | [] -> failwith "even list??"
+        | _ ->
+            if Int.equal (List.length before) (List.length after) then cur
+            else go (cur :: before) (List.hd_exn after) (List.tl_exn after)
+      in
+      go [] (List.hd_exn lst) (List.tl_exn lst)
+    in
+    List.filter updates ~f:(fun u ->
+        not @@ List.is_sorted u ~compare:compare_updates )
+    |> List.map ~f:(fun u -> List.sort u ~compare:compare_updates)
+    |> List.map ~f:middle_element
+    |> List.fold ~init:0 ~f:Int.( + )
+    |> Stdlib.print_int
 end
 
 include M
@@ -99,4 +122,4 @@ let example =
    97,13,75,29,47"
 
 (* Expect test for example input *)
-let%expect_test _ = run example ; [%expect {| 143 |}]
+let%expect_test _ = run example ; [%expect {| 143 123|}]
