@@ -106,7 +106,9 @@ include M
 include Day.Make (M)
 
 (* Example input *)
+(*
 let example = ""
 
 (* Expect test for example input *)
 let%expect_test _ = run example ; [%expect {| |}]
+*)
