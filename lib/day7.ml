@@ -14,23 +14,31 @@ module M = struct
            |> List.map ~f:Int.of_string
            |> fun line -> (List.hd_exn line, List.tl_exn line) )
 
-  let check_equation test_value numbers =
+  let check_equation test_value numbers with_concat =
     let rec go acc remaining =
       match remaining with
       | [] -> Int.equal acc test_value
-      | elem :: rst -> go (elem + acc) rst || go (elem * acc) rst
+      | elem :: rst ->
+          go (elem + acc) rst
+          || go (elem * acc) rst
+          || with_concat
+             && go (Int.of_string (Printf.sprintf "%d%d" acc elem)) rst
     in
     go (List.hd_exn numbers) (List.tl_exn numbers)
 
   (* Run part 1 with parsed inputs *)
   let part1 equations =
     List.filter equations ~f:(fun equation ->
-        check_equation (fst equation) (snd equation) )
+        check_equation (fst equation) (snd equation) false)
     |> List.fold ~init:0 ~f:(fun acc equation -> acc + fst equation)
-    |> Stdlib.print_int
+    |> Stdlib.print_int |> Stdlib.print_newline
 
   (* Run part 2 with parsed inputs *)
-  let part2 _ = ()
+  let part2 equations = 
+    List.filter equations ~f:(fun equation ->
+        check_equation (fst equation) (snd equation) true)
+    |> List.fold ~init:0 ~f:(fun acc equation -> acc + fst equation)
+    |> Stdlib.print_int |> Stdlib.print_newline
 end
 
 include M
@@ -49,4 +57,6 @@ let example =
    292: 11 6 16 20"
 
 (* Expect test for example input *)
-let%expect_test _ = run example ; [%expect {| 3749 |}]
+let%expect_test _ = run example ; [%expect {| 
+    3749
+    11387 |}]
