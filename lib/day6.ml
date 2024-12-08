@@ -5,6 +5,8 @@ module M = struct
   (* Type to parse the input into *)
   type t = int * char array
 
+  type step_result = Out | Loop | Step of (int * int) * (int * int)
+
   let index_to_coord (idx : int) (x_len : int) : int * int =
     let y = Int.(idx / x_len) and x = Int.(idx % x_len) in
     (x, y)
@@ -32,33 +34,72 @@ module M = struct
     | None -> failwith "guard"
     | Some (i, _) -> index_to_coord i x_len
 
-  (* Run part 1 with parsed inputs *)
-  let part1 (x_len, matrix) =
-    let res = Array.create ~len:(Array.length matrix) false in
+  let check_guard_path (x_len, matrix) =
+    let res = Array.create ~len:(Array.length matrix) None in
     let step (x, y) direction =
+      let dx, dy = direction in
       let n_x, n_y = sum_coord (x, y) direction in
+      let new_idx = coord_to_index (n_x, n_y) x_len in
       if n_x < 0 || n_y < 0 || Int.equal n_x x_len || Int.equal n_y x_len
-      then (
-        Array.set res (coord_to_index (x, y) x_len) true ;
-        None )
-      else if
-        Char.equal '#' (Array.get matrix (coord_to_index (n_x, n_y) x_len))
-      then Some ((x, y), next_dir direction)
-      else (
-        Array.set res (coord_to_index (x, y) x_len) true ;
-        Some ((n_x, n_y), direction) )
+      then
+        (* Array.set res (coord_to_index (x, y) x_len) (Some direction) ; *)
+        Out
+      else if Char.equal '#' (Array.get matrix new_idx) then
+        Step ((x, y), next_dir direction)
+      else
+        (* Array.set res (coord_to_index (x, y) x_len) (Some direction) ; *)
+        match Array.get res new_idx with
+        | Some (vdx, vdy) ->
+            if Int.equal dx vdx && Int.equal dy vdy then Loop
+            else (
+              Array.set res new_idx (Some direction) ;
+              Step ((n_x, n_y), direction) )
+        | _ ->
+            Array.set res new_idx (Some direction) ;
+            Step ((n_x, n_y), direction)
     in
     let rec run (x, y) direction =
       match step (x, y) direction with
-      | None -> ()
-      | Some ((x, y), direction) -> run (x, y) direction
+      | Out -> Out
+      | Loop -> Loop
+      | Step ((x, y), direction) -> run (x, y) direction
     in
-    run (guard_position (x_len, matrix)) (0, -1) ;
-    Array.fold res ~init:0 ~f:(fun acc el -> if el then acc + 1 else acc)
+    match run (guard_position (x_len, matrix)) (0, -1) with
+    | Loop -> (Loop, res)
+    | Out -> (Out, res)
+    | _ -> failwith "should not occur"
+
+  (* Run part 1 with parsed inputs *)
+  let part1 input =
+    check_guard_path input |> snd
+    |> Array.fold ~init:0 ~f:(fun acc el ->
+           if Option.is_some el then acc + 1 else acc )
     |> Stdlib.print_int
 
   (* Run part 2 with parsed inputs *)
-  let part2 _ = ()
+  let part2 input =
+    let _, matrix = input in
+    let gx, gy = guard_position input in
+    let path = check_guard_path input in
+    let visited_idxs =
+      snd path
+      |> Array.filter_mapi ~f:(fun idx elem ->
+             match elem with
+             | Some (x, y) ->
+                 if not (Int.equal x gx && Int.equal y gy) then Some idx
+                 else None
+             | None -> None )
+    in
+    Array.fold visited_idxs ~init:0 ~f:(fun acc elem ->
+        (* ugly ass mutation *)
+        Array.set matrix elem '#' ;
+        let res =
+          match check_guard_path input |> fst with
+          | Loop -> acc + 1
+          | _ -> acc
+        in
+        Array.set matrix elem '.' ; res )
+    |> Stdlib.print_int
 end
 
 include M
