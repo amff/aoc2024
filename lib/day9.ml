@@ -24,6 +24,12 @@ module M = struct
     in
     go [] (String.to_list _inputs) false 0
 
+  let check_sum fs_list =
+    List.foldi fs_list ~init:0 ~f:(fun idx acc c_opt ->
+        match c_opt with
+        | None -> acc
+        | Some c -> acc + (Char.get_digit_exn c * idx) )
+
   (* Run part 1 with parsed inputs *)
   let part1 _ = ()
 
