@@ -11,7 +11,7 @@ module M = struct
     let y = Int.(idx / x_len) and x = Int.(idx % x_len) in
     (x, y)
 
-  let coord_to_index (x, y) x_len = (y * x_len) + x
+  let coord_to_index x_len (x, y) = (y * x_len) + x
 
   let sum_coord (x, y) (x2, y2) = (x + x2, y + y2)
 
@@ -39,15 +39,12 @@ module M = struct
     let step (x, y) direction =
       let dx, dy = direction in
       let n_x, n_y = sum_coord (x, y) direction in
-      let new_idx = coord_to_index (n_x, n_y) x_len in
+      let new_idx = coord_to_index x_len (n_x, n_y) in
       if n_x < 0 || n_y < 0 || Int.equal n_x x_len || Int.equal n_y x_len
-      then
-        (* Array.set res (coord_to_index (x, y) x_len) (Some direction) ; *)
-        Out
+      then Out
       else if Char.equal '#' (Array.get matrix new_idx) then
         Step ((x, y), next_dir direction)
       else
-        (* Array.set res (coord_to_index (x, y) x_len) (Some direction) ; *)
         match Array.get res new_idx with
         | Some (vdx, vdy) ->
             if Int.equal dx vdx && Int.equal dy vdy then Loop
@@ -106,9 +103,7 @@ include M
 include Day.Make (M)
 
 (* Example input *)
-(*
-let example = ""
+(* let example = ""
 
-(* Expect test for example input *)
-let%expect_test _ = run example ; [%expect {| |}]
-*)
+   (* Expect test for example input *) let%expect_test _ = run example ;
+   [%expect {| |}] *)
