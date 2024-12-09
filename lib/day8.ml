@@ -9,12 +9,30 @@ module M = struct
     if x < 0 || y < 0 || x >= grid_size || y >= grid_size then false
     else true
 
-  let antinodes_for grid_size (a, b) =
+  let antinodes_for with_ressonant_harmonics grid_size (a, b) =
+    let s = Sequence.unfold ~init:0 ~f:(fun n -> Some (n, n)) in
     let x1, y1 = Day6.index_to_coord a grid_size
     and x2, y2 = Day6.index_to_coord b grid_size in
     let dx = x2 - x1 and dy = y2 - y1 in
-    [(x1 - dx, y1 - dy); (x2 + dx, y2 + dy)]
-    |> List.filter ~f:(is_coord_in_grid grid_size)
+    let anti_nodes =
+      if not with_ressonant_harmonics then
+        [(x1 - dx, y1 - dy); (x2 + dx, y2 + dy)]
+      else
+        Sequence.fold_until s ~init:[]
+          ~f:(fun acc r ->
+            let c1 = (x1 - (r * dx), y1 - (r * dx))
+            and c2 = (x2 + (r * dx), y2 + (r * dy)) in
+            let c1_ok = is_coord_in_grid grid_size c1
+            and c2_ok = is_coord_in_grid grid_size c2 in
+            if not (c1_ok && c2_ok) then Stop acc
+            else
+              Continue
+                ( [c1; c2]
+                |> List.filter ~f:(is_coord_in_grid grid_size)
+                |> List.append acc ) )
+          ~finish:Fn.id
+    in
+    List.filter anti_nodes ~f:(is_coord_in_grid grid_size)
     |> List.map ~f:(Day6.coord_to_index grid_size)
 
   let make_pairs lst =
@@ -42,16 +60,22 @@ module M = struct
 
   (* Run part 1 with parsed inputs *)
   let part1 (grid_size, antennas) =
-    Stdio.printf "%d" grid_size ;
     Map.map antennas ~f:(fun v ->
         make_pairs v
-        |> List.concat_map ~f:(fun pair -> antinodes_for grid_size pair) )
+        |> List.concat_map ~f:(fun pair ->
+               antinodes_for false grid_size pair ) )
+    |> Map.to_alist |> List.concat_map ~f:snd
+    |> Set.of_list (module Int)
+    |> Set.length |> Stdlib.print_int |> Stdlib.print_newline
+
+  (* Run part 2 with parsed inputs *)
+  let part2 (grid_size, antennas) =
+    Map.map antennas ~f:(fun v ->
+        make_pairs v
+        |> List.concat_map ~f:(fun pair -> antinodes_for true grid_size pair) )
     |> Map.to_alist |> List.concat_map ~f:snd
     |> Set.of_list (module Int)
     |> Set.length |> Stdlib.print_int
-
-  (* Run part 2 with parsed inputs *)
-  let part2 _ = ()
 end
 
 include M
