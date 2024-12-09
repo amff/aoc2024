@@ -10,7 +10,7 @@ module M = struct
     else true
 
   let antinodes_for with_ressonant_harmonics grid_size (a, b) =
-    let s = Sequence.unfold ~init:0 ~f:(fun n -> Some (n, n)) in
+    let s = Sequence.unfold ~init:0 ~f:(fun n -> Some (n, n + 1)) in
     let x1, y1 = Day6.index_to_coord a grid_size
     and x2, y2 = Day6.index_to_coord b grid_size in
     let dx = x2 - x1 and dy = y2 - y1 in
@@ -20,11 +20,11 @@ module M = struct
       else
         Sequence.fold_until s ~init:[]
           ~f:(fun acc r ->
-            let c1 = (x1 - (r * dx), y1 - (r * dx))
+            let c1 = (x1 - (r * dx), y1 - (r * dy))
             and c2 = (x2 + (r * dx), y2 + (r * dy)) in
             let c1_ok = is_coord_in_grid grid_size c1
             and c2_ok = is_coord_in_grid grid_size c2 in
-            if not (c1_ok && c2_ok) then Stop acc
+            if not (c1_ok || c2_ok) then Stop acc
             else
               Continue
                 ( [c1; c2]
