@@ -1,11 +1,28 @@
 open! Imports
+open Base
 
 module M = struct
   (* Type to parse the input into *)
-  type t = unit
+  type t = int option list
 
   (* Parse the input to type t, invoked for both parts *)
-  let parse _inputs = ()
+  let parse _inputs =
+    let rec go (acc : int option list) lst is_free_space cur_id =
+      match lst with
+      | [] -> acc
+      | elem :: rst ->
+          let repeat_n = Char.get_digit_exn elem in
+          if not is_free_space then
+            go
+              (List.append acc
+                 (List.init repeat_n ~f:(fun _ -> Some cur_id)) )
+              rst (not is_free_space) cur_id
+          else
+            go
+              (List.append acc (List.init repeat_n ~f:(fun _ -> None)))
+              rst (not is_free_space) (cur_id + 1)
+    in
+    go [] (String.to_list _inputs) false 0
 
   (* Run part 1 with parsed inputs *)
   let part1 _ = ()
