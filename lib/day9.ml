@@ -53,9 +53,26 @@ module M = struct
     | Free | Gap -> 1 + (gap_from arr n + 1)
     | _ -> 0
 
+  let file_equal a b =
+    match (a, b) with
+    | File (id1, _), File (id2, _) -> Int.equal id1 id2
+    | _ -> false
+
+  let file_compare_desc a b =
+    match (a, b) with
+    | File (id1, _), File (id2, _) -> -1 * Int.compare id1 id2
+    | File (_, _), Gap -> 1
+    | File (_, _), Free -> 1
+    | _, _ -> 0
+
   let defrag fsa =
-    let files = Array.filter fsa ~f:is_file in
-    _
+    let files =
+      Array.filter fsa ~f:is_file
+      |> Array.fold ~init:[] ~f:(fun acc x ->
+             if List.mem acc x ~equal:file_equal then acc else x :: acc )
+      |> List.sort ~compare:file_compare_desc
+    in
+    fsa
 
   (* Run part 1 with parsed inputs *)
   let part1 input =
@@ -63,7 +80,9 @@ module M = struct
     check_sum input |> Stdlib.print_int |> Stdlib.print_newline
 
   (* Run part 2 with parsed inputs *)
-  let part2 _ = ()
+  let part2 input =
+    let _ = defrag input in
+    ()
 end
 
 include M
