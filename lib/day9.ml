@@ -66,11 +66,28 @@ module M = struct
     | _, _ -> 0
 
   let defrag fsa =
-    let files =
+    let front_idx = ref 0
+    and disk_length = Array.length fsa
+    and files_rev =
       Array.filter fsa ~f:is_file
       |> Array.fold ~init:[] ~f:(fun acc x ->
              if List.mem acc x ~equal:file_equal then acc else x :: acc )
       |> List.sort ~compare:file_compare_desc
+      |> List.map ~f:(fun elem ->
+             match elem with
+             | File (id, len) -> (id, len)
+             | _ -> failwith "unreachable" )
+    in
+    let () =
+      while !front_idx < disk_length do
+        let f_elem = Array.get fsa !front_idx in
+        match f_elem with
+        | File (_, _) -> front_idx := !front_idx + 1 (* Free won't happen *)
+        | Free -> failwith "unreachable"
+        | Gap ->
+            let size = gap_from fsa !front_idx in
+            _
+      done
     in
     fsa
 
