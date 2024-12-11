@@ -58,25 +58,33 @@ module M = struct
     | File (id1, _), File (id2, _) -> Int.equal id1 id2
     | _ -> false
 
-  let file_compare_desc a b =
+  let file_compare a b =
     match (a, b) with
-    | File (id1, _), File (id2, _) -> -1 * Int.compare id1 id2
+    | File (id1, _), File (id2, _) -> Int.compare id1 id2
     | File (_, _), Gap -> 1
     | File (_, _), Free -> 1
     | _, _ -> 0
 
+  let find_file_to_move file_index unmoved_files gap_size =
+    let max_file_id = ref (Hashtbl.length file_index - 1) in
+    _
+
   let defrag fsa =
     let front_idx = ref 0
     and disk_length = Array.length fsa
-    and files_rev =
+    and files =
       Array.filter fsa ~f:is_file
       |> Array.fold ~init:[] ~f:(fun acc x ->
              if List.mem acc x ~equal:file_equal then acc else x :: acc )
-      |> List.sort ~compare:file_compare_desc
+      |> List.sort ~compare:file_compare
       |> List.map ~f:(fun elem ->
              match elem with
              | File (id, len) -> (id, len)
              | _ -> failwith "unreachable" )
+    in
+    let file_index = Hashtbl.of_alist (module Int) files
+    and unmoved_files =
+      Hash_set.of_list (module Int) (List.map files ~f:fst)
     in
     let () =
       while !front_idx < disk_length do
@@ -85,7 +93,11 @@ module M = struct
         | File (_, _) -> front_idx := !front_idx + 1 (* Free won't happen *)
         | Free -> failwith "unreachable"
         | Gap ->
-            let size = gap_from fsa !front_idx in
+            let gap_size = gap_from fsa !front_idx in
+            let file_to_move =
+              find_file_to_move file_index unmoved_files gap_size
+                (List.length files - 1)
+            in
             _
       done
     in
