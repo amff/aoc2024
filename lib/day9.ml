@@ -66,8 +66,17 @@ module M = struct
     | _, _ -> 0
 
   let find_file_to_move file_index unmoved_files gap_size =
-    let max_file_id = ref (Hashtbl.length file_index - 1) in
-    _
+    let file_id = ref (Hashtbl.length file_index - 1) in
+    let found = ref None in
+    while !file_id > 0 && Option.is_none !found do
+      let len = Hashtbl.find_exn file_index !file_id in
+      if
+        Hash_set.exists unmoved_files ~f:(Int.equal !file_id)
+        && len <= gap_size
+      then found := Some (!file_id, len)
+      else file_id := !file_id - 1
+    done ;
+    Option.value_exn !found
 
   let defrag fsa =
     let front_idx = ref 0
@@ -82,7 +91,7 @@ module M = struct
              | File (id, len) -> (id, len)
              | _ -> failwith "unreachable" )
     in
-    let file_index = Hashtbl.of_alist (module Int) files
+    let file_index = Hashtbl.of_alist_exn (module Int) files
     and unmoved_files =
       Hash_set.of_list (module Int) (List.map files ~f:fst)
     in
@@ -96,7 +105,8 @@ module M = struct
             let gap_size = gap_from fsa !front_idx in
             let file_to_move =
               find_file_to_move file_index unmoved_files gap_size
-                (List.length files - 1)
+              (* TODO stupidly forgot to add the start_index of a file so I
+                 can move *)
             in
             _
       done
